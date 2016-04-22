@@ -3,7 +3,6 @@
 import caffe
 import numpy
 import skimage
-import scipy.linalg.blas
 import scipy.optimize
 
 # Initialize caffe to run on GPU 0:
@@ -25,6 +24,9 @@ net = caffe.Net("caffenet/deploy.prototxt",
                 "caffenet/bvlc_reference_caffenet.caffemodel",
                 caffe.TEST)
 
+# For VGG-19 and the like:
+#style_layers = ["conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1"]
+#content_layers = ["conv4_2"]
 style_layers = ["conv1", "conv2", "conv3", "conv4", "conv5"]
 content_layers = ["conv4"]
 layers = [l for l in net.blobs if l in content_layers or l in style_layers]
@@ -42,7 +44,7 @@ xform.set_transpose("data", (2,0,1))
 xform.set_raw_scale("data", 255)
 
 # Scale both images to a certain size:
-size = 1024
+size = 512
 style_scale = 1.2
 # The below just gets the *longest* edge to 'size' pixels wide.
 content_scaled = skimage.transform.rescale(
@@ -68,7 +70,7 @@ for layer in style_layers:
     # TODO: Flattening the latter two (of 3) dimensions, but why?
     act.shape = (act.shape[0], -1)
     # Find Gram matrix (only needed on style layers):
-    style_repr[layer] = scipy.linalg.blas.sgemm(1, act, act.T)
+    style_repr[layer] = numpy.dot(act, act.T)
 
 # and then do the same thing for the content image:
 dims, x, y = content_scaled.shape[2], content_scaled.shape[0], content_scaled.shape[1]
@@ -85,6 +87,7 @@ for layer in content_layers:
     content_repr[layer] = act
 
 # Make white noise input as the starting image:
+numpy.random.seed(12345)
 target_img = xform.preprocess(
     "data", numpy.random.randn(*(net.blobs["data"].data.shape[1:])))
 #target_img = xform.preprocess("data", content_scaled)
@@ -100,7 +103,7 @@ data_bounds = [(data_min[0], data_max[0])]*(target_img.size/3) + \
 
 # Ratio between matching the content of the content image, and the
 # style of the style image (see figure 3 of the paper):
-ratio = 1e4
+ratio = 1e3
 
 def optfn(x):
     # Reshape the (flattened) input and feed it into the network:
@@ -123,7 +126,7 @@ def optfn(x):
             act = net.blobs[layer].data[0].copy()
             act.shape = (act.shape[0], -1)
         # Gram matrix again:
-        style_repr_tmp[layer] = scipy.linalg.blas.sgemm(1, act, act.T)
+        style_repr_tmp[layer] = numpy.dot(act, act.T)
 
     # Starting at last layer (see self.layers), propagate error back.
     loss = 0
@@ -140,8 +143,7 @@ def optfn(x):
             ## See equation 6 in paper
             c = content_repr_tmp[layer].shape[0]**-2 * content_repr_tmp[layer].shape[1]**-2
             d = style_repr_tmp[layer] - style_repr[layer]
-            g = c * scipy.linalg.blas.sgemm(
-                1.0, d, content_repr_tmp[layer]) * (content_repr_tmp[layer]>0)
+            g = c * numpy.dot(d, content_repr_tmp[layer]) * (content_repr_tmp[layer]>0)
             loss += w * (c/4 * (d**2).sum()) * ratio
             grad += w * g.reshape(grad.shape) * ratio
 
@@ -160,8 +162,8 @@ def optfn(x):
         else:
             grad = net.blobs[next_layer].diff[0]
 
-    # Total Variation Gradient,
-    # based on https://github.com/kaishengtai/neuralart
+    # Total Variation Gradient, based on
+    # https://github.com/kaishengtai/neuralart
     tv_strength = 1e-3
     x_diff = net_in[:, :-1, :-1] - net_in[:, :-1, 1:]
     y_diff = net_in[:, :-1, :-1] - net_in[:, 1:, :-1]
