@@ -1,0 +1,87 @@
+% Chris Hodapp, 2016-04-25
+% Georgia Institute of Technology, CS6475, Computational Photography,
+% Spring 2016
+% Final Project
+
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[letterpaper, portrait, margin=1in]{geometry}
+
+\title
+    {CS6475, Computational Photography \\
+      Spring 2016 \\
+      Final Project}
+\date{April 25, 2016}
+\author{Chris Hodapp, chodapp3@gatech.edu}
+
+\begin{document}
+
+\section{Literate Implementation of ``A Neural Algorithm of Artistic Style''}
+
+\subsection{Project Goal}
+
+The goal of this project was to implement the algorithm described in
+the paper.
+
+The eventual result was a Python notebook (for Jupyter/IPython) which
+gives a simplified example of how to actually implement this
+algorithm.  It aims to use most of the same libraries that we used in
+the class where possible, with caffe being the main addition.
+
+I found that many of the existing implementations lacked clear
+explanations for why they were written the way they did.  I wanted to
+create an implementation that other students could refer to and
+hopefully understand.
+
+\subsection{Images}
+
+\subsection{Pipeline}
+
+\subsection{Project Resources}
+
+% What is the best way to see your project?
+% Provide links, pictures, describe it, give details.
+
+\subsection{What Worked \& What Didn't}
+
+- The algorithm could be very finicky about textures, and did not seem
+to handle high-detail photos very well.
+
+- However, there is room for a lot of tuning.  The layers chosen have
+a lot of influence over this.  The parameters seemed very
+scale-dependent too.
+
+- It seemed as though the style image needed to have a sufficient
+range of color and texture in it in order to be able to represent the
+content well.
+
+- Poor settings seemed to manifest themselves as the content image
+being completely unrecognizable, or as the content image being visible
+as a mosaic of the same pieces of the style image over and over.
+
+- I quickly ran into the memory and processing limits.  My video card
+was an Nvidia GTX 660 Ti with 2 GB of memory, and while some neural
+networks fit in this memory, many others (the preferred ones) could
+not.  In addition, it put a limit on how large of an image I could
+generate.  While I could have run all of these operations on my CPU,
+this would have taken between hours and days for a single image.
+
+\subsection{Other Details}
+
+\subsection{References/Pointers}
+
+% Reference:
+http://jessicalanan.com/wp-content/uploads/2013/09/Fall-FB.jpg
+
+\subsection{Team}
+
+\subsection{Credits/Thanks}
+
+
+% Include PDF:
+% \includegraphics{ps1-002}
+
+\end{document}
