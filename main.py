@@ -20,6 +20,7 @@ content = caffe.io.load_image("./brad_pitt.jpg")
 
 # Load Caffenet model (source:
 # http://dl.caffe.berkeleyvision.org/bvlc_reference_caffenet.caffemodel):
+# TODO: Where does deploy.prototxt come from?
 net = caffe.Net("caffenet/deploy.prototxt",
                 "caffenet/bvlc_reference_caffenet.caffemodel",
                 caffe.TEST)
@@ -28,11 +29,12 @@ style_layers = ["conv1", "conv2", "conv3", "conv4", "conv5"]
 content_layers = ["conv4"]
 layers = [l for l in net.blobs if l in content_layers or l in style_layers]
 
-# TODO: Where do deploy.prototxt and ilsvrc_2012_mean.npy come from?
+# This file is from:
+# https://github.com/BVLC/caffe/tree/master/python/caffe/imagenet
 mean_data = numpy.load("caffenet/ilsvrc_2012_mean.npy")
 
-# TODO: What is the purpose of this?
-# "all models used are trained on imagenet data"
+# Normalize input data to the appropriate range for what this neural
+# net was trained on:
 xform = caffe.io.Transformer({"data": net.blobs["data"].data.shape})
 xform.set_mean("data", mean_data.mean(1).mean(1))
 xform.set_channel_swap("data", (2,1,0))
@@ -40,7 +42,7 @@ xform.set_transpose("data", (2,0,1))
 xform.set_raw_scale("data", 255)
 
 # Scale both images to a certain size:
-size = 512
+size = 1024
 style_scale = 1.2
 # The below just gets the *longest* edge to 'size' pixels wide.
 content_scaled = skimage.transform.rescale(
@@ -83,12 +85,9 @@ for layer in content_layers:
     content_repr[layer] = act
 
 # Make white noise input as the starting image:
-numpy.random.seed(12345)
-#target_img = xform.preprocess(
-#    "data", numpy.random.randn(*(net.blobs["data"].data.shape[1:])))
-target_img = xform.preprocess("data", content_scaled)
-# TODO: Does the scale of this need changing?  randn isn't in [0,1],
-# but the input to xform.preprocess in other usages is.
+target_img = xform.preprocess(
+    "data", numpy.random.randn(*(net.blobs["data"].data.shape[1:])))
+#target_img = xform.preprocess("data", content_scaled)
 
 # TODO: What does the below do? ("compute data bounds").  The result
 # is a very large list - incidentally equal to the product of the
@@ -99,7 +98,8 @@ data_bounds = [(data_min[0], data_max[0])]*(target_img.size/3) + \
               [(data_min[1], data_max[1])]*(target_img.size/3) + \
               [(data_min[2], data_max[2])]*(target_img.size/3)
 
-# TODO: Explain in terms of the paper
+# Ratio between matching the content of the content image, and the
+# style of the style image (see figure 3 of the paper):
 ratio = 1e4
 
 def optfn(x):
@@ -124,8 +124,6 @@ def optfn(x):
             act.shape = (act.shape[0], -1)
         # Gram matrix again:
         style_repr_tmp[layer] = scipy.linalg.blas.sgemm(1, act, act.T)
-    # style_repr_tmp is incorrect in some subtle way.
-    # The state of the neural network differs here somehow.
 
     # Starting at last layer (see self.layers), propagate error back.
     loss = 0
@@ -135,9 +133,9 @@ def optfn(x):
         next_layer = None if i == len(layers)-1 else layers[-i-2]
         grad = net.blobs[layer].diff[0]
 
+        # Compute the style loss (note that we bias by 'ratio')
         # For now, just set 'w' to be even for all style layers:
         w = 1.0 / len(style_layers)
-        # style contribution
         if layer in style_layers:
             ## See equation 6 in paper
             c = content_repr_tmp[layer].shape[0]**-2 * content_repr_tmp[layer].shape[1]**-2
@@ -146,7 +144,8 @@ def optfn(x):
                 1.0, d, content_repr_tmp[layer]) * (content_repr_tmp[layer]>0)
             loss += w * (c/4 * (d**2).sum()) * ratio
             grad += w * g.reshape(grad.shape) * ratio
-            
+
+        # Compute the content less
         w = 1.0 / len(content_layers)
         # content contribution
         if layer in content_layers:
@@ -154,7 +153,7 @@ def optfn(x):
             loss += w * (d**2).sum() / 2
             grad += w * (d * (content_repr_tmp[layer] > 0)).reshape(grad.shape)
 
-        # compute gradient
+        # Propagate this error back into the network
         net.backward(start=layer, end=next_layer)
         if next_layer is None:
             grad = net.blobs["data"].diff[0]
@@ -172,11 +171,16 @@ def optfn(x):
     tv[:, 1:,  :-1] -= y_diff
     grad += tv_strength * tv
             
-    # format gradient for minimize() function
+    # Flatten gradient (as minimize() wants to handle it):
     grad = grad.flatten().astype(numpy.float64)
 
     return loss, grad
-   
+
+# Now, use a standard optimization routine in SciPy to minimize the
+# loss we've defined - by modifying the input image, with the help of
+# the gradient that our loss function also returns (hence, we set
+# 'jac' to True).  This uses L-BFGS-B, but other optimization methods
+# (such as Adam) also work.
 res = scipy.optimize.minimize(optfn,
                               target_img.flatten(),
                               args = (),
@@ -185,7 +189,10 @@ res = scipy.optimize.minimize(optfn,
                               jac = True,
                               bounds = data_bounds)
 # TODO: Check success?
+# TODO: Get answer out of 'res' instead of network?  It'd need
+# reshaping.
 
-# Grab final results:
+# Grab final results, and "deprocess" them to undo the preprocessing:
 data = net.blobs["data"].data
-scipy.misc.imsave("out.png", skimage.img_as_ubyte(xform.deprocess("data", data)));
+scipy.misc.imsave("out.png",
+                  skimage.img_as_ubyte(xform.deprocess("data", data)));
