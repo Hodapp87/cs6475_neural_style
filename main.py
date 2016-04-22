@@ -14,9 +14,9 @@ caffe.set_mode_gpu()
 
 # Load style and content images 
 #content = caffe.io.load_image("./Roundtanglelake.jpg")
-#style   = caffe.io.load_image("./escher_sphere.jpg")
+style   = caffe.io.load_image("./escher_sphere.jpg")
 content = caffe.io.load_image("./brad_pitt.jpg")
-style   = caffe.io.load_image("./picasso_selfport1907.jpg")
+#style   = caffe.io.load_image("./picasso_selfport1907.jpg")
 
 # Load Caffenet model (source:
 # http://dl.caffe.berkeleyvision.org/bvlc_reference_caffenet.caffemodel):
@@ -84,8 +84,9 @@ for layer in content_layers:
 
 # Make white noise input as the starting image:
 numpy.random.seed(12345)
-target_img = xform.preprocess(
-    "data", numpy.random.randn(*(net.blobs["data"].data.shape[1:])))
+#target_img = xform.preprocess(
+#    "data", numpy.random.randn(*(net.blobs["data"].data.shape[1:])))
+target_img = xform.preprocess("data", content_scaled)
 # TODO: Does the scale of this need changing?  randn isn't in [0,1],
 # but the input to xform.preprocess in other usages is.
 
@@ -100,49 +101,31 @@ data_bounds = [(data_min[0], data_max[0])]*(target_img.size/3) + \
 
 # TODO: Explain in terms of the paper
 ratio = 1e4
-def callback(xk):
-    # TODO: Count iterations, print loss, or something like that
-    print("Callback...")
 
 def optfn(x):
     # Reshape the (flattened) input and feed it into the network:
     net_in = x.reshape(net.blobs["data"].data.shape[1:])
-    #print("Before:")
-    #print(net_in)
-    #print(net.blobs["data"].data.shape)
-    #print(net.blobs["data"].data)
     net.blobs["data"].data[0] = net_in
     net.forward()
-    #print("Before loop")
-    #print(net_in)
-    #print(net.blobs["data"].data)
 
     # Get content & style representation of net_in:
     content_repr_tmp = {}
-    # TODO: Try removing set(...)
-    for layer in set(layers):
+    for layer in layers:
         act = net.blobs[layer].data[0].copy()
         act.shape = (act.shape[0], -1)
         content_repr_tmp[layer] = act
-        #print("After %s:" % (layer,))
-        #print(net.blobs["data"].data)
         
     style_repr_tmp = {}
-    # TODO: Try removing set(...)
-    for layer in set(style_layers):
-        #print(layer)
+    for layer in style_layers:
         if layer in content_repr_tmp:
             act = content_repr_tmp[layer]
         else:
             act = net.blobs[layer].data[0].copy()
             act.shape = (act.shape[0], -1)
-        #print(act)
         # Gram matrix again:
         style_repr_tmp[layer] = scipy.linalg.blas.sgemm(1, act, act.T)
     # style_repr_tmp is incorrect in some subtle way.
     # The state of the neural network differs here somehow.
-    #print(style_repr_tmp)
-    #print(content_repr_tmp)
 
     # Starting at last layer (see self.layers), propagate error back.
     loss = 0
@@ -152,7 +135,6 @@ def optfn(x):
         next_layer = None if i == len(layers)-1 else layers[-i-2]
         grad = net.blobs[layer].diff[0]
 
-        #print("grad1=%s" % (grad,))
         # For now, just set 'w' to be even for all style layers:
         w = 1.0 / len(style_layers)
         # style contribution
@@ -164,16 +146,13 @@ def optfn(x):
                 1.0, d, content_repr_tmp[layer]) * (content_repr_tmp[layer]>0)
             loss += w * (c/4 * (d**2).sum()) * ratio
             grad += w * g.reshape(grad.shape) * ratio
-        #print("grad2=%s" % (grad,))
             
-
         w = 1.0 / len(content_layers)
         # content contribution
         if layer in content_layers:
             d = content_repr_tmp[layer] - content_repr[layer]
             loss += w * (d**2).sum() / 2
             grad += w * (d * (content_repr_tmp[layer] > 0)).reshape(grad.shape)
-        #print("grad3=%s" % (grad,))
 
         # compute gradient
         net.backward(start=layer, end=next_layer)
@@ -181,14 +160,23 @@ def optfn(x):
             grad = net.blobs["data"].diff[0]
         else:
             grad = net.blobs[next_layer].diff[0]
-        #print("grad4=%s" % (grad,))
 
+    # Total Variation Gradient,
+    # based on https://github.com/kaishengtai/neuralart
+    tv_strength = 1e-3
+    x_diff = net_in[:, :-1, :-1] - net_in[:, :-1, 1:]
+    y_diff = net_in[:, :-1, :-1] - net_in[:, 1:, :-1]
+    tv = numpy.zeros(grad.shape)
+    tv[:, :-1, :-1] += x_diff + y_diff
+    tv[:, :-1, 1:]  -= x_diff
+    tv[:, 1:,  :-1] -= y_diff
+    grad += tv_strength * tv
+            
     # format gradient for minimize() function
     grad = grad.flatten().astype(numpy.float64)
 
     return loss, grad
    
-# TODO: Need style_optfn.
 res = scipy.optimize.minimize(optfn,
                               target_img.flatten(),
                               args = (),
