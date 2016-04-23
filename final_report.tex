@@ -23,18 +23,41 @@
 
 \subsection{Project Goal}
 
-The goal of this project was to implement the algorithm described in
-the paper.
+The goal of this project was to create a literate implementation (as
+in \href{https://en.wikipedia.org/wiki/Literate_programming}{literate
+  programming}) of the algorithm described in the recent paper, ``A
+Neural Algorithm of Artistic Style'' by Leon A. Gatys, Alexander
+S. Ecker, and Matthias Bethge\cite{neuralstyle2015}.
 
-The eventual result was a Python notebook (for Jupyter/IPython) which
-gives a simplified example of how to actually implement this
-algorithm.  It aims to use most of the same libraries that we used in
-the class where possible, with caffe being the main addition.
+The paper is sufficiently well-known by now that it has many
+open-source and commercial implementations that are quite good:
 
-I found that many of the existing implementations lacked clear
-explanations for why they were written the way they did.  I wanted to
-create an implementation that other students could refer to and
-hopefully understand.
+\begin{itemize}
+  \item \url{https://github.com/jcjohnson/neural-style}
+  \item \url{https://github.com/kaishengtai/neuralart}
+  \item \url{https://github.com/andersbll/neural_artistic_style}
+  \item \url{https://github.com/fzliu/style-transfer}
+  \item \url{https://github.com/woodrush/neural-art-tf}
+  \item \url{https://deepart.io}
+\end{itemize}
+
+However, I found that many of the existing implementations lacked
+clear explanations for why they were written the way they did.
+
+The students in this class (and others such as CS6476) should already
+be familiar to some degree with the use of Python, NumPy, SciPy, and
+OpenCV in the algorithms of computational photography.  My aim was
+that this implementation let such students use this familiarity as a
+stepping stone to understanding the clever methods in this paper and
+libraries like the \href{http://caffe.berkeleyvision.org/}{Caffe} deep
+learning framework.
+
+The eventual result was an IPython notebook (via
+\href{https://jupyter.org/}{Jupyter}) which gives a simplified (but
+still functional) example of how to actually implement this algorithm.
+All images in this report were produced with that code.
+
+% TODO: And where is that code?
 
 \subsection{Images}
 
@@ -42,8 +65,8 @@ hopefully understand.
 
 \subsection{Project Resources}
 
-% What is the best way to see your project?
-% Provide links, pictures, describe it, give details.
+% TODO: What is the best way to see your project?
+% TODO: Provide links, pictures, describe it, give details.
 
 \subsection{What Worked \& What Didn't}
 
@@ -52,7 +75,8 @@ to handle high-detail photos very well.
 
 - However, there is room for a lot of tuning.  The layers chosen have
 a lot of influence over this.  The parameters seemed very
-scale-dependent too.
+scale-dependent too.  Tuning unfortunately tended to be difficult when
+the results were subject to some amount of randomness.
 
 - It seemed as though the style image needed to have a sufficient
 range of color and texture in it in order to be able to represent the
@@ -75,13 +99,23 @@ this would have taken between hours and days for a single image.
 
 % Reference:
 http://jessicalanan.com/wp-content/uploads/2013/09/Fall-FB.jpg
-
+http://jessicalanan.com/an-autumn-stroll/
+% and all the other stuff I linked
+   
 \subsection{Team}
 
 \subsection{Credits/Thanks}
 
+% Do links up above belong here?
+% Chris Harmoney?
 
-% Include PDF:
-% \includegraphics{ps1-002}
+\begin{thebibliography}{9}
+
+\bibitem{neuralstyle2015} Leon A. Gatys, Alexander S. Ecker, and
+  Matthias Bethge, A Neural Algorithm of Artistic Style,
+  \emph{arXiv:1508.06576v2}, \url{http://arxiv.org/abs/1508.06576},
+  2015.
+
+\end{thebibliography}
 
 \end{document}

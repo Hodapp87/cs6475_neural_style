@@ -4,6 +4,7 @@ import caffe
 import numpy
 import skimage
 import scipy.optimize
+import cv2
 
 # Initialize caffe to run on GPU 0:
 caffe.set_device(0)
@@ -13,9 +14,11 @@ caffe.set_mode_gpu()
 
 # Load style and content images 
 #content = caffe.io.load_image("./Roundtanglelake.jpg")
-style   = caffe.io.load_image("./escher_sphere.jpg")
-content = caffe.io.load_image("./brad_pitt.jpg")
+#style   = caffe.io.load_image("./escher_sphere.jpg")
+#content = caffe.io.load_image("./brad_pitt.jpg")
 #style   = caffe.io.load_image("./picasso_selfport1907.jpg")
+content = caffe.io.load_image("13681848113_c41cd968d4_k.jpg")
+style   = caffe.io.load_image("1280px-Great_Wave_off_Kanagawa2.jpg")
 
 # Load Caffenet model (source:
 # http://dl.caffe.berkeleyvision.org/bvlc_reference_caffenet.caffemodel):
@@ -47,44 +50,48 @@ xform.set_raw_scale("data", 255)
 size = 512
 style_scale = 1.2
 # The below just gets the *longest* edge to 'size' pixels wide.
-content_scaled = skimage.transform.rescale(
-    content, float(size) / max(content.shape[:2]))
-style_scaled = skimage.transform.rescale(
-    style, style_scale * float(size) / max(style.shape[:2]))
+#content_scaled = skimage.transform.rescale(
+#    content, float(size) / max(content.shape[:2]))
+#style_scaled = skimage.transform.rescale(
+#    style, style_scale * float(size) / max(style.shape[:2]))
+#content_scaled = scipy.misc.imresize(
+#    content, float(size) / max(content.shape[:2]))
+#style_scaled = scipy.misc.imresize(
+#    style, style_scale * float(size) / max(style.shape[:2]))
 
-# Scale neural network & transformer, for this new size of
-# 'style_scaled':
-# TODO: Does neural-style do this?
-dims, x, y = style_scaled.shape[2], style_scaled.shape[0], style_scaled.shape[1]
-net.blobs["data"].reshape(1, dims, x, y)
-xform.inputs["data"] = (1, dims, x, y)
+f = float(size) / max(content.shape[:2])
+content_scaled = cv2.resize(content, (0, 0), fx=f, fy=f)
+f = style_scale * float(size) / max(style.shape[:2])
+style_scaled = cv2.resize(style, (0, 0), fx=f, fy=f)
 
-# Run the style image through the neural network!
-# TODO: Why data[0] here?
-net.blobs["data"].data[0] = xform.preprocess("data", style_scaled)
-net.forward()
-style_repr = {}
-for layer in style_layers:
-    # TODO: Why data[0]?
-    act = net.blobs[layer].data[0].copy()
-    # TODO: Flattening the latter two (of 3) dimensions, but why?
-    act.shape = (act.shape[0], -1)
-    # Find Gram matrix (only needed on style layers):
-    style_repr[layer] = numpy.dot(act, act.T)
+def net_forward(img):
+    ch, w, h = img.shape[2], img.shape[0], img.shape[1]
+    net.blobs["data"].reshape(1, ch, w, h)
+    xform.inputs["data"] = (1, ch, w, h)
+    
+    net.blobs["data"].data[0] = xform.preprocess("data", img)
+    net.forward()
 
-# and then do the same thing for the content image:
-dims, x, y = content_scaled.shape[2], content_scaled.shape[0], content_scaled.shape[1]
-net.blobs["data"].reshape(1, dims, x, y)
-xform.inputs["data"] = (1, dims, x, y)
-net.blobs["data"].data[0] = xform.preprocess("data", content_scaled)
-net.forward()
-content_repr = {}
-for layer in content_layers:
-    # TODO: Why data[0]?
-    act = net.blobs[layer].data[0].copy()
-    # TODO: Flattening the latter two (of 3) dimensions, but why?
-    act.shape = (act.shape[0], -1)
-    content_repr[layer] = act
+def get_content_repr(img):
+    resp = {}
+    for layer in layers:
+        act = net.blobs[layer].data[0].copy()
+        act.shape = (act.shape[0], -1)
+        resp[layer] = act
+    return(resp)
+
+def get_style_repr(img):
+    resp = {}
+    for layer in style_layers:
+        act = net.blobs[layer].data[0].copy()
+        act.shape = (act.shape[0], -1)
+        resp[layer] = numpy.dot(act, act.T)
+    return(resp)
+
+net_forward(style_scaled)
+style_repr = get_style_repr(style_scaled)
+net_forward(content_scaled)
+content_repr = get_content_repr(content_scaled)
 
 # Make white noise input as the starting image:
 numpy.random.seed(12345)
@@ -105,66 +112,65 @@ data_bounds = [(data_min[0], data_max[0])]*(target_img.size/3) + \
 # style of the style image (see figure 3 of the paper):
 ratio = 1e3
 
-def optfn(x):
+# Initialize to correct size
+# net_forward(content_scaled)
+
+def loss_function(x):
     # Reshape the (flattened) input and feed it into the network:
     net_in = x.reshape(net.blobs["data"].data.shape[1:])
     net.blobs["data"].data[0] = net_in
     net.forward()
 
     # Get content & style representation of net_in:
-    content_repr_tmp = {}
-    for layer in layers:
-        act = net.blobs[layer].data[0].copy()
-        act.shape = (act.shape[0], -1)
-        content_repr_tmp[layer] = act
-        
-    style_repr_tmp = {}
-    for layer in style_layers:
-        if layer in content_repr_tmp:
-            act = content_repr_tmp[layer]
-        else:
-            act = net.blobs[layer].data[0].copy()
-            act.shape = (act.shape[0], -1)
-        # Gram matrix again:
-        style_repr_tmp[layer] = numpy.dot(act, act.T)
-
+    content_repr_tmp = get_content_repr(net_in)
+    style_repr_tmp = get_style_repr(net_in)
+    
     # Starting at last layer (see self.layers), propagate error back.
     loss = 0
     net.blobs[layers[-1]].diff[:] = 0
-    # TODO: Rewrite all this.
     for i, layer in enumerate(reversed(layers)):
         next_layer = None if i == len(layers)-1 else layers[-i-2]
         grad = net.blobs[layer].diff[0]
 
-        # Compute the style loss (note that we bias by 'ratio')
-        # For now, just set 'w' to be even for all style layers:
+        # Matching paper notation for equations 1 to 7:
+        Pl = content_repr[layer]
+        Fl = content_repr_tmp[layer]
+        Nl = content_repr_tmp[layer].shape[0]
+        Ml = content_repr_tmp[layer].shape[1]
+        Gl = style_repr_tmp[layer]
+        Al = style_repr[layer]
+        
+        # Content loss:
+        w = 1.0 / len(content_layers)
+        if layer in content_layers:
+            d = Fl - Pl
+            # Equations 1 & 2:
+            loss += w * (d**2).sum() / 2
+            grad += w * (d * (Fl > 0)).reshape(grad.shape)
+
+        # Style loss:
         w = 1.0 / len(style_layers)
         if layer in style_layers:
-            ## See equation 6 in paper
-            c = content_repr_tmp[layer].shape[0]**-2 * content_repr_tmp[layer].shape[1]**-2
-            d = style_repr_tmp[layer] - style_repr[layer]
-            g = c * numpy.dot(d, content_repr_tmp[layer]) * (content_repr_tmp[layer]>0)
-            loss += w * (c/4 * (d**2).sum()) * ratio
-            grad += w * g.reshape(grad.shape) * ratio
+            q = (Nl * Ml)**-2
+            d = Gl - Al
+            # Equation 4:
+            El = q/4 * (d**2).sum()
+            # Equation 6:
+            dEl = q * numpy.dot(d, Fl) * (Fl > 0)
+            # Equation 5:
+            loss += w * El * ratio
+            # Equation 7 (ish):
+            grad += w * dEl.reshape(grad.shape) * ratio
 
-        # Compute the content less
-        w = 1.0 / len(content_layers)
-        # content contribution
-        if layer in content_layers:
-            d = content_repr_tmp[layer] - content_repr[layer]
-            loss += w * (d**2).sum() / 2
-            grad += w * (d * (content_repr_tmp[layer] > 0)).reshape(grad.shape)
-
-        # Propagate this error back into the network
+        # Finally, propagate this error back into the network
         net.backward(start=layer, end=next_layer)
         if next_layer is None:
             grad = net.blobs["data"].diff[0]
         else:
             grad = net.blobs[next_layer].diff[0]
 
-    # Total Variation Gradient, based on
-    # https://github.com/kaishengtai/neuralart
-    tv_strength = 1e-3
+    # Total Variation Gradient:
+    tv_strength = 1e-2
     x_diff = net_in[:, :-1, :-1] - net_in[:, :-1, 1:]
     y_diff = net_in[:, :-1, :-1] - net_in[:, 1:, :-1]
     tv = numpy.zeros(grad.shape)
@@ -183,10 +189,10 @@ def optfn(x):
 # the gradient that our loss function also returns (hence, we set
 # 'jac' to True).  This uses L-BFGS-B, but other optimization methods
 # (such as Adam) also work.
-res = scipy.optimize.minimize(optfn,
+res = scipy.optimize.minimize(loss_function,
                               target_img.flatten(),
                               args = (),
-                              options = {"maxiter": 512, "maxcor": 8, "disp": True},
+                              options = {"maxiter": 1000, "maxcor": 8, "disp": True},
                               method = "L-BFGS-B",
                               jac = True,
                               bounds = data_bounds)
@@ -196,5 +202,5 @@ res = scipy.optimize.minimize(optfn,
 
 # Grab final results, and "deprocess" them to undo the preprocessing:
 data = net.blobs["data"].data
-scipy.misc.imsave("out.png",
+scipy.misc.imsave("out_water.png",
                   skimage.img_as_ubyte(xform.deprocess("data", data)));
