@@ -18,6 +18,7 @@
 \author{Chris Hodapp, chodapp3@gatech.edu}
 
 \begin{document}
+\maketitle
 
 \section{Literate Implementation of ``A Neural Algorithm of Artistic Style''}
 
@@ -41,8 +42,8 @@ open-source and commercial implementations that are quite good:
   \item \url{https://deepart.io}
 \end{itemize}
 
-However, I found that many of the existing implementations lacked
-clear explanations for why they were written the way they did.
+However, I found that many of these lacked clear explanations on why
+they were implemented how they were.
 
 The students in this class (and others such as CS6476) should already
 be familiar to some degree with the use of Python, NumPy, SciPy, and
@@ -58,51 +59,102 @@ still functional) example of how to actually implement this algorithm.
 All images in this report were produced with that code.
 
 % TODO: And where is that code?
-
-\subsection{Images}
-
-\subsection{Pipeline}
-
-\subsection{Project Resources}
+% \subsection{Project Resources} ?
 
 % TODO: What is the best way to see your project?
 % TODO: Provide links, pictures, describe it, give details.
 
+\subsection{Images}
+
+Getting images that looked right with this code took a lot of
+experimentation. Two examples are given below (the first of which is
+also reproduced in the Python notebook that is attached).
+
+\subsubsection{Great Wave \& French Park}
+
+The style image used for this example was the well-known illustration,
+\href{https://en.wikipedia.org/wiki/The_Great_Wave_off_Kanagawa}{The
+  Great Wave off Kanagawa}:
+
+\includegraphics[width=0.7\textwidth]{./1280px-Great_Wave_off_Kanagawa2b.jpg}
+
+The content image is a photograph taken on my phone on Section
+Rd. near French Park in Cincinnati, Ohio:
+
+\includegraphics[width=0.7\textwidth]{./french_park.jpg}
+
+Finally, the below is the result of running the given code in order to match the
+style of the first image with the content of the second.
+Particularly, it is a 1024x1024 image, it used layers \texttt{conv1},
+\texttt{conv2}, \texttt{conv3}, \texttt{conv4}, and \texttt{conv5} of
+the neural network for the style representation, and \texttt{conv4}
+for the content representation, and it ran for 400 iterations with
+$\alpha=1$, $\beta=10^3$, and $TV=10^-2$.
+
+\includegraphics[width=0.9\textwidth]{./out_french_c4_all.png}
+
+Many more parameters exist that could be tuned, and I make no attempt
+to show them all, but the grid below shows different combinations of
+layers being used for the style and the content representations:
+
+\includegraphics[width=1.00\textwidth]{./frenchpark_composite.jpg}
+
+\subsubsection{Autumn illustration \& Harrisburg}
+
+The style image is an illustration from Jessica Lanan titled
+\href{http://jessicalanan.com/an-autumn-stroll/}{An Autumn Stroll}:
+
+\includegraphics[width=0.7\textwidth]{./Fall-FB.jpg}
+
+The content image is a photograph from Harrisburg, Pennsylvania:
+
+\includegraphics[width=0.7\textwidth]{./harrisburg.jpg}
+
+The result is the 1280x960 image below, rendered with near-identical
+settings as the last example (except for $\beta=10^4$ - i.e. putting
+more focus on the style):
+
+\includegraphics[width=0.9\textwidth]{./out_harrisburg.png}
+
+\subsection{Pipeline}
+
 \subsection{What Worked \& What Didn't}
 
-- The algorithm could be very finicky about textures, and did not seem
-to handle high-detail photos very well.
+This algorithm required a lot of tuning to get results that were
+appealing, and the attached notebook may give some sense of how many
+parameters it has that could require tuning.  The fact that the
+results were subject to some amount of randomness and that the
+parameters seemed scale-dependent also made tuning difficult.  On the
+other hand, the algorithm did seem to provide a lot of control.
 
-- However, there is room for a lot of tuning.  The layers chosen have
-a lot of influence over this.  The parameters seemed very
-scale-dependent too.  Tuning unfortunately tended to be difficult when
-the results were subject to some amount of randomness.
+It seemed very sensitive to textures, and it had problems with
+photographs that were higher-detail; this was not so much an issue of
+the photograph's resolution as it was the presence of fine edges.
 
-- It seemed as though the style image needed to have a sufficient
-range of color and texture in it in order to be able to represent the
-content well.
+It seemed as though the style image needed to have a sufficient range
+of color and texture in it in order to be able to represent the
+content well.  Poor settings or unsuitable style images seemed to
+manifest themselves as the content image being completely
+unrecognizable, or as the content image being visible as a mosaic of
+the same pieces of the style image over and over.
 
-- Poor settings seemed to manifest themselves as the content image
-being completely unrecognizable, or as the content image being visible
-as a mosaic of the same pieces of the style image over and over.
-
-- I quickly ran into the memory and processing limits.  My video card
+I quickly ran into the memory and processing limits.  My video card
 was an Nvidia GTX 660 Ti with 2 GB of memory, and while some neural
 networks fit in this memory, many others (the preferred ones) could
 not.  In addition, it put a limit on how large of an image I could
 generate.  While I could have run all of these operations on my CPU,
 this would have taken between hours and days for a single image.
 
-\subsection{Other Details}
+All my tests were run with a pre-trained Caffenet neural network.  I
+witnessed better results on a GoogleNet neural network, but with
+longer processing time.  I wanted to test further on other neural
+networks, particularly with the Illustration2Vec network that was
+designed and trained on illustrations\cite{Saito2015}, but my video
+card had insufficient memory for these networks.
 
-\subsection{References/Pointers}
-
-% Reference:
-http://jessicalanan.com/wp-content/uploads/2013/09/Fall-FB.jpg
-http://jessicalanan.com/an-autumn-stroll/
-% and all the other stuff I linked
-   
-\subsection{Team}
+I still feel I was able to get good results using content images from
+photographs that had recognizable overall scenes, and style images
+from illustrations that covered a similar range of colors.
 
 \subsection{Credits/Thanks}
 
@@ -116,6 +168,15 @@ http://jessicalanan.com/an-autumn-stroll/
   \emph{arXiv:1508.06576v2}, \url{http://arxiv.org/abs/1508.06576},
   2015.
 
+\bibitem{Saito2015}Masaki Sati and Yusuke Matsui,
+  Illustration2Vec: A Semantic Vector Representation of Illustrations,
+  \emph{SIGGRAPH Asia Technical Briefs}, 2015.
+  
 \end{thebibliography}
+
+\section{Python notebook}
+
+What follows after this is a PDF export of the Python notebook that is
+linked earlier.
 
 \end{document}
