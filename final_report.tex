@@ -58,11 +58,65 @@ The eventual result was an IPython notebook (via
 still functional) example of how to actually implement this algorithm.
 All images in this report were produced with that code.
 
-% TODO: And where is that code?
-% \subsection{Project Resources} ?
+\subsection{Credits \& Acknowledgements}
 
-% TODO: What is the best way to see your project?
-% TODO: Provide links, pictures, describe it, give details.
+The implementation here derives from all of the open-source projects
+listed above along with the aforementioned research
+paper\cite{neuralstyle2015}.  The particular Python approach was based
+on \href{https://github.com/fzliu/style-transfer}{style-transfer} by
+Frank Lie and Dylan Paiton, and some techniques came from
+\href{https://github.com/jcjohnson/neural-style}{neural-style} from
+Justin Johnson.
+
+It also makes extensive use of the
+\href{http://caffe.berkeleyvision.org/}{Caffe} deep learning framework
+and the BVLC Reference CaffeNet from the
+\href{http://caffe.berkeleyvision.org/model_zoo.html}{Caffe Model
+  Zoo}.
+
+\subsection{Resources}
+
+This file contains the Python notebook:
+
+\url{http://hodapple.com/files/cs6475/chodapp3-cs6475-neural-style.zip}.
+
+This presently requires Python 2.x with NumPy, SciPy, OpenCV, and
+\href{http://caffe.berkeleyvision.org/}{Caffe}.  Presently, the only
+reason for not supporting Python 3.x is that the Caffe bindings only
+support Python 2.x.
+
+Running this will require a pre-trained Caffe model such as one from
+the \href{http://caffe.berkeleyvision.org/model_zoo.html}{Caffe Model
+  Zoo}.  As the model used here is 200+ MB, it is left out of the ZIP
+file above.  The code notes where to download this model and how to
+swap it out for different models if desired.
+
+Using the notebook requires an installation of
+\href{https://jupyter.org/}{Jupyter} and IPython.  Merely viewing the
+notebook can be done without needing dependencies listed above,
+however, to actually run the code of course requires those
+dependencies.
+
+The file also contains Python code exported from the notebook.  It may
+require that a handful of lines using \texttt{IPython.display} be
+removed, but they are there only for visualization in the notebook.
+
+An exported version of this notebook also appears later on in this
+report.
+
+\subsection{Pipeline}
+
+The below shows a rough pipeline for how this algorithm operates.  The
+inputs are the style image and output images, and the output is the
+generated image.  The neural network, loss function, and optimization
+process have many parameters influencing the result, but they are not
+shown here.
+
+\includegraphics[width=0.7\textwidth]{flowchart.png}
+
+Much more detail is available in the Python notebook that is attached
+at the end of this document, as well as the research paper that is
+referenced.
 
 \subsection{Images}
 
@@ -91,7 +145,7 @@ the neural network for the style representation, and \texttt{conv4}
 for the content representation, and it ran for 400 iterations with
 $\alpha=1$, $\beta=10^3$, and $TV=10^-2$.
 
-\includegraphics[width=0.9\textwidth]{./out_french_c4_all.png}
+\includegraphics[width=0.9\textwidth]{./out_french_c4_all.jpg}
 
 Many more parameters exist that could be tuned, and I make no attempt
 to show them all, but the grid below shows different combinations of
@@ -114,9 +168,7 @@ The result is the 1280x960 image below, rendered with near-identical
 settings as the last example (except for $\beta=10^4$ - i.e. putting
 more focus on the style):
 
-\includegraphics[width=0.9\textwidth]{./out_harrisburg.png}
-
-\subsection{Pipeline}
+\includegraphics[width=0.9\textwidth]{./out_harrisburg.jpg}
 
 \subsection{What Worked \& What Didn't}
 
@@ -156,11 +208,6 @@ I still feel I was able to get good results using content images from
 photographs that had recognizable overall scenes, and style images
 from illustrations that covered a similar range of colors.
 
-\subsection{Credits/Thanks}
-
-% Do links up above belong here?
-% Chris Harmoney?
-
 \begin{thebibliography}{9}
 
 \bibitem{neuralstyle2015} Leon A. Gatys, Alexander S. Ecker, and
@@ -176,7 +223,7 @@ from illustrations that covered a similar range of colors.
 
 \section{Python notebook}
 
-What follows after this is a PDF export of the Python notebook that is
-linked earlier.
+What follows after this is an exported version of the Python notebook
+that is linked earlier.
 
 \end{document}
