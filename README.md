@@ -17,14 +17,12 @@ Alexander S. Ecker, and Matthias Bethge.
 The paper is sufficiently well-known by now that it has many
 open-source and commercial implementations that are quite good:
 
-\begin{itemize}
-  \item \url{https://github.com/jcjohnson/neural-style}
-  \item \url{https://github.com/kaishengtai/neuralart}
-  \item \url{https://github.com/andersbll/neural_artistic_style}
-  \item \url{https://github.com/fzliu/style-transfer}
-  \item \url{https://github.com/woodrush/neural-art-tf}
-  \item \url{https://deepart.io}
-\end{itemize}
+- https://github.com/jcjohnson/neural-style
+- https://github.com/kaishengtai/neuralart
+- https://github.com/andersbll/neural_artistic_style
+- https://github.com/fzliu/style-transfer
+- https://github.com/woodrush/neural-art-tf
+- https://deepart.io
 
 However, I found that many of these lacked clear explanations on why
 they were implemented how they were.  The hope was that students in
@@ -37,9 +35,9 @@ computational photography.
 ## Notebook
 
 The eventual result was an IPython notebook (via
-\href{https://jupyter.org/}{Jupyter}) which gives a simplified (but
-still functional) example of how to actually implement this algorithm
-with \href{http://caffe.berkeleyvision.org/}{Caffe}.
+[Jupyter](https://jupyter.org/)) which gives a simplified (but still
+functional) example of how to actually implement this algorithm with
+[Caffe](http://caffe.berkeleyvision.org/).
 
 That notebook is available in
 ["Neural Algorithm of Style" Notebook.ipynb](./"Neural Algorithm of
