@@ -27,7 +27,7 @@ open-source and commercial implementations that are quite good:
 However, I found that many of these lacked clear explanations on why
 they were implemented how they were.  The hope was that students in
 CS6475 (and maybe
-(CS4495/CS6476)[http://www.cc.gatech.edu/~hays/compvision/] could
+[CS4495/CS6476](http://www.cc.gatech.edu/~hays/compvision/)) could
 understand and use this implementation, starting from their existing
 familiarity with Python, NumPy, SciPy, and OpenCV in the algorithms of
 computational photography.
