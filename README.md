@@ -43,4 +43,4 @@ That notebook is available in
 ["Neural Algorithm of Style" Notebook.ipynb](./"Neural Algorithm of
 Style" Notebook.ipynb) in this repository.  The conversion of this to
 a PDF is available in
-[neural-style-notebook.pdf](./neural-style-notebook.pdf), 
+[neural-style-notebook.pdf](./neural-style-notebook.pdf).
