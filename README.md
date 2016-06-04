@@ -10,8 +10,8 @@ at Georgia Tech.  Most of the material here is duplicated in
 The goal of this project was to create a literate implementation (as
 in
 [literate programming](https://en.wikipedia.org/wiki/Literate_programming))
-of the algorithm described in the recent paper, (A Neural Algorithm of
-Artistic Style)[http://arxiv.org/abs/1508.06576] by Leon A. Gatys,
+of the algorithm described in the recent paper, [A Neural Algorithm of
+Artistic Style](http://arxiv.org/abs/1508.06576) by Leon A. Gatys,
 Alexander S. Ecker, and Matthias Bethge.
 
 The paper is sufficiently well-known by now that it has many
