@@ -40,7 +40,7 @@ functional) example of how to actually implement this algorithm with
 [Caffe](http://caffe.berkeleyvision.org/).
 
 That notebook is available in
-["Neural Algorithm of Style" Notebook.ipynb](./"Neural Algorithm of Style" Notebook.ipynb)
+["Neural Algorithm of Style" Notebook.ipynb](./%22Neural%20Algorithm%20of%20Style%22%20Notebook.ipynb)
 in this repository.  The conversion of this to
 a PDF is available in
 [neural-style-notebook.pdf](./neural-style-notebook.pdf).
